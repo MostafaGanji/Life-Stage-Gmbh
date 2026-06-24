@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Life Stage GmbH – Finde deinen Weg</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        /* ══════════════════════════════════════════════
+           BASE
+        ══════════════════════════════════════════════ */
+        :root { --em: #10b981; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { height: 100%; }
+        body {
+            height: 100vh; overflow: hidden;
+            background-color: #0f1b2a;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body::before {
+            content: ''; position: fixed; top: -25vh; left: -15vw;
+            width: 60vw; height: 60vw; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(16,185,129,.07) 0%, transparent 65%);
+        }
+        body::after {
+            content: ''; position: fixed; bottom: -30vh; right: -10vw;
+            width: 50vw; height: 50vw; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle, rgba(56,189,248,.05) 0%, transparent 65%);
+        }
+
+        /* ══════════════════════════════════════════════
+           SCREEN SYSTEM
+        ══════════════════════════════════════════════ */
+        #app { position: relative; width: 100%; height: 100vh; z-index: 1; }
+        .screen {
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1.5rem;
+            opacity: 0; pointer-events: none; overflow-y: auto;
+            transition: opacity .45s cubic-bezier(.4,0,.2,1);
+        }
+        .screen.active { opacity: 1; pointer-events: auto; }
+        .screen.has-skip { padding-bottom: 6.5rem; }
+
+        /* ══════════════════════════════════════════════
+           START BUTTON PULSE
+        ══════════════════════════════════════════════ */
+        @keyframes pulse-ring {
+            0%   { box-shadow: 0 0 0  0px rgba(16,185,129,.45); }
+            70%  { box-shadow: 0 0 0 16px rgba(16,185,129,0); }
+            100% { box-shadow: 0 0 0  0px rgba(16,185,129,0); }
+        }
+        .btn-start { animation: pulse-ring 2.6s ease-out infinite; }
+
+        /* ══════════════════════════════════════════════
+           PROGRESS BAR
+        ══════════════════════════════════════════════ */
+        #progress-bar {
+            background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+            transition: width .5s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* ══════════════════════════════════════════════
+           CHOICE BUTTONS
+        ══════════════════════════════════════════════ */
+        .answer-btn {
+            position: relative; overflow: hidden;
+            transition: transform .16s ease, background-color .16s ease, border-color .16s ease;
+        }
+        .answer-btn::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--em); border-radius: 3px 0 0 3px;
+            transform: scaleY(0); transition: transform .16s ease;
+        }
+        .answer-btn:hover::before  { transform: scaleY(1); }
+        .answer-btn:hover {
+            transform: translateX(4px);
+            background-color: rgba(16,185,129,.08) !important;
+            border-color: rgba(16,185,129,.45) !important;
+        }
+        .answer-btn:active { transform: translateX(2px); }
+
+        /* ══════════════════════════════════════════════
+           SCALE BUTTONS (1–5)
+        ══════════════════════════════════════════════ */
+        .scale-btn {
+            flex: 1; height: 3.25rem; border-radius: .75rem;
+            background: rgba(30,45,66,.7);
+            border: 1px solid rgba(100,116,139,.3);
+            color: #94a3b8; font-size: 1.125rem; font-weight: 700;
+            cursor: pointer; transition: all .15s ease;
+        }
+        .scale-btn:hover {
+            background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.5);
+            color: #34d399; transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(16,185,129,.15);
+        }
+        .scale-btn:active { transform: translateY(-1px); }
+
+        /* ══════════════════════════════════════════════
+           YES / NO BUTTONS
+        ══════════════════════════════════════════════ */
+        .yesno-btn {
+            height: 4rem; border-radius: .875rem;
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: all .15s ease;
+        }
+        .btn-yes {
+            background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.35); color: #34d399;
+        }
+        .btn-yes:hover {
+            background: rgba(16,185,129,.2); border-color: rgba(16,185,129,.65);
+            transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,.2);
+        }
+        .btn-no {
+            background: rgba(30,45,66,.7); border: 1px solid rgba(100,116,139,.3); color: #94a3b8;
+        }
+        .btn-no:hover {
+            background: rgba(100,116,139,.15); border-color: rgba(100,116,139,.5);
+            color: #cbd5e1; transform: translateY(-2px);
+        }
+
+        /* ══════════════════════════════════════════════
+           QUESTION CARD ANIMATION
+        ══════════════════════════════════════════════ */
+        #question-card { transition: opacity .22s ease, transform .22s ease; }
+        #question-card.fading { opacity: 0; transform: translateY(10px); }
+
+        /* ══════════════════════════════════════════════
+           SKIP BAR
+        ══════════════════════════════════════════════ */
+        #skip-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+            display: flex; justify-content: center; align-items: flex-end;
+            padding: 2.5rem 1rem 1.25rem;
+            background: linear-gradient(to top, #0f1b2a 40%, rgba(15,27,42,.65) 75%, transparent);
+            pointer-events: none; transition: opacity .3s ease;
+        }
+        #skip-bar button { pointer-events: auto; }
+
+        /* ══════════════════════════════════════════════
+           ROADMAP COLUMNS (Phase 3)
+        ══════════════════════════════════════════════ */
+        .road-col {
+            background: linear-gradient(160deg, #18263a 0%, #131f30 100%);
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 1rem;
+            transition: border-color .35s ease, box-shadow .35s ease, opacity .35s ease;
+        }
+        .road-col.road-winner {
+            border-color: #10b981;
+            box-shadow: 0 0 0 1px rgba(16,185,129,.3), 0 0 40px rgba(16,185,129,.15);
+        }
+        .road-col.road-dimmed { opacity: .5; }
+
+        /* ══════════════════════════════════════════════
+           PHASE INFO BOX (inline tooltip)
+        ══════════════════════════════════════════════ */
+        .info-box {
+            animation: info-expand .18s ease-out;
+        }
+        @keyframes info-expand {
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+
+<body>
+<div id="app">
+
+    <!-- ████████████████████████████████████████████
+         SCREEN 1 — LANDING
+    ████████████████████████████████████████████ -->
+    <div id="screen-landing" class="screen active">
+        <div class="max-w-lg w-full text-center">
+
+            <div class="mb-8">
+                <span class="inline-flex items-center gap-2 px-3.5 py-1.5
+                             text-xs font-bold tracking-widest text-emerald-400 uppercase
+                             bg-emerald-400/10 rounded-full border border-emerald-400/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Life Stage GmbH
+                </span>
+            </div>
+
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-slate-100 leading-tight mb-3">
+                Ausbildung oder Studium?
+            </h1>
+            <p class="text-2xl sm:text-3xl font-bold text-emerald-400 mb-6">Finde deinen Weg.</p>
+            <p class="text-slate-400 text-base sm:text-lg max-w-md mx-auto leading-relaxed mb-10">
+                Beantworte bis zu 22 kurze Fragen und erhalte deine persönliche
+                10-Jahres-Roadmap. Kein Richtig oder Falsch.
+            </p>
+
+            <button id="btn-start" onclick="startQuiz()"
+                class="btn-start inline-flex items-center gap-3 px-10 py-4
+                       bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600
+                       text-white font-bold text-lg rounded-2xl
+                       transition-colors duration-200 cursor-pointer shadow-xl">
+                Jetzt starten
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </button>
+
+            <p class="mt-5 text-slate-500 text-sm">⏱ Ca. 5–7 Minuten &nbsp;·&nbsp; Keine Anmeldung nötig</p>
+        </div>
+    </div>
+
+
+    <!-- ████████████████████████████████████████████
+         SCREEN 2 — QUESTION
+    ████████████████████████████████████████████ -->
+    <div id="screen-question" class="screen">
+        <div class="max-w-2xl w-full">
+
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold tracking-widest text-emerald-400/60 uppercase">Life Stage</span>
+                <span id="progress-label" class="text-sm font-semibold text-slate-400">Frage 1 von 10</span>
+            </div>
+
+            <div class="w-full h-1.5 bg-slate-700/60 rounded-full overflow-hidden mb-8">
+                <div id="progress-bar" class="h-full rounded-full" style="width:0%"></div>
+            </div>
+
+            <div id="question-card"
+                 class="bg-slate-800/80 backdrop-blur rounded-2xl p-6 sm:p-8
+                        border border-slate-700/40 shadow-2xl">
+
+                <p class="text-xs font-bold text-emerald-400/70 uppercase tracking-widest mb-2
+                           flex items-center gap-2 flex-wrap">
+                    <span id="phase-label">Frage</span>
+                    <span id="q-number">1</span>
+                    <span id="phase2-badge"
+                          class="hidden inline-flex items-center px-2 py-0.5
+                                 bg-emerald-500/10 border border-emerald-500/20
+                                 text-emerald-400 rounded-full text-[10px] font-semibold
+                                 uppercase tracking-wider">
+                        Vertiefung
+                    </span>
+                </p>
+
+                <h2 id="question-text"
+                    class="text-xl sm:text-2xl font-bold text-slate-100 leading-snug mb-7">
+                    Wird geladen…
+                </h2>
+
+                <div id="answers-container" class="flex flex-col gap-3"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ████████████████████████████████████████████
+         SCREEN 3 — RESULT  (10-Jahres-Roadmap)
+    ████████████████████████████████████████████ -->
+    <div id="screen-result" class="screen">
+        <div class="max-w-5xl w-full py-4">
+
+            <!-- ⚠ Skip accuracy warning -->
+            <div id="skip-warning" class="hidden mb-6 max-w-2xl mx-auto">
+                <div class="flex items-start gap-3
+                            bg-amber-500/10 border border-amber-500/35
+                            rounded-xl p-4 text-left">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+                         viewBox="0 0 24 24" stroke="#f59e0b" stroke-width="2.5"
+                         class="flex-shrink-0 mt-0.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71
+                                 c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898
+                                 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                    </svg>
+                    <div>
+                        <p class="text-amber-400 font-semibold text-sm mb-1">Hinweis zur Genauigkeit</p>
+                        <p class="text-amber-300/80 text-xs leading-relaxed">
+                            Du hast die Befragung vorzeitig beendet. Diese Einschätzung basiert
+                            auf unvollständigen Daten und dient nur als grober Richtwert.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="flex justify-center mb-3">
+                    <div class="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/30
+                                flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+                             viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-100 mb-2">
+                    Deine 10-Jahres-Roadmap
+                </h2>
+                <p id="result-recommendation" class="text-slate-300 text-sm mb-4">
+                    Auswertung läuft…
+                </p>
+
+                <!-- Compact score display -->
+                <div class="inline-flex items-center gap-3 px-4 py-2
+                            bg-slate-800/60 rounded-full border border-slate-700/40
+                            text-xs text-slate-400">
+                    <span>Ausbildung: <strong id="result-score-a" class="text-slate-200">0</strong> Pkt.</span>
+                    <span class="text-slate-600">·</span>
+                    <span>Studium: <strong id="result-score-s" class="text-slate-200">0</strong> Pkt.</span>
+                </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════
+                 TWO-COLUMN ROADMAP
+            ═══════════════════════════════════════ -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-6">
+                <!-- Left column: Ausbildung — populated by buildRoadmapColumn() -->
+                <div id="road-ausbildung" class="road-col"></div>
+                <!-- Right column: Studium — populated by buildRoadmapColumn() -->
+                <div id="road-studium" class="road-col"></div>
+            </div>
+
+            <!-- Source note -->
+            <p class="text-slate-600 text-xs text-center mb-6 leading-relaxed">
+                * Alle Gehaltsangaben sind Näherungswerte aus einem simulierten RAG-Modell
+                (Destatis-Basis 2023/24) und dienen ausschließlich zur Orientierung.
+            </p>
+
+            <!-- Restart -->
+            <div class="text-center">
+                <button onclick="restartQuiz()"
+                    class="inline-flex items-center gap-2 px-7 py-3
+                           border border-slate-600 hover:border-emerald-500/50
+                           text-slate-300 hover:text-emerald-400 font-semibold
+                           rounded-xl transition-colors duration-200 cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none"
+                         viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992
+                                 m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7
+                                 M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"/>
+                    </svg>
+                    Nochmals starten
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /#app -->
+
+
+<!-- ████████████████████████████████████████████
+     SKIP BAR
+████████████████████████████████████████████ -->
+<div id="skip-bar" style="display:none; opacity:0;">
+    <button onclick="skipSurvey()"
+        class="flex items-center gap-2.5 px-5 py-2.5
+               bg-slate-800/90 backdrop-blur
+               border border-slate-600/60 hover:border-amber-500/40
+               rounded-xl text-slate-400 hover:text-amber-400
+               text-sm font-medium transition-all duration-200 cursor-pointer shadow-lg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M3 8.689c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0
+                     1.954l-7.108 4.061A1.125 1.125 0 0 1 3 16.811V8.69ZM12.75 8.689
+                     c0-.864.933-1.406 1.683-.977l7.108 4.061a1.125 1.125 0 0 1 0
+                     1.954l-7.108 4.061a1.125 1.125 0 0 1-1.683-.977V8.69Z"/>
+        </svg>
+        Befragung abkürzen &amp; vorläufige Analyse ansehen
+    </button>
+</div>
+
+
+<!-- ████████████████████████████████████████████████
+     QUIZ ENGINE
+████████████████████████████████████████████████ -->
+<script>
+
+/* ═══════════════════════════════════════════════
+   1. STATE
+═══════════════════════════════════════════════ */
+let currentQuestion = 0;
+let phase           = 1;        // 1 = initial, 2 = branch
+let currentBlock    = null;     // 'ausbildung' | 'studium'
+let phase2Index     = 0;
+let scoreAusbildung = 0;
+let scoreStudium    = 0;
+let wasSkipped      = false;
+let transitioning   = false;
+
+
+/* ═══════════════════════════════════════════════
+   2. MOCK-STATISTIKEN  (simuliertes RAG-Modell)
+   Dient als einzige Datenquelle für die Roadmap.
+   Quellen: Destatis 2023/24, BIBB, DSW.
+═══════════════════════════════════════════════ */
+const mockStatistiken = {
+    ausbildung: {
+        label:    'Ausbildung',
+        subtitle: 'Duales Lernen in Betrieb & Berufsschule',
+        phasen: [
+            {
+                jahre:  'Jahre 1–3',
+                label:  'Die Lernphase',
+                gehalt: 'ca. 1.050 €/Monat brutto',
+                quelle: 'Ø Ausbildungsvergütung 2024, alle Branchen (BIBB)',
+                punkte: [
+                    'Gehalt steigt jährlich (Ø +5 % p. a.)',
+                    'Kein Schulden- oder Studiengebührenrisiko',
+                    'IHK-/ HWK-Abschluss nach 2– 3,5 Jahren',
+                ]
+            },
+            {
+                jahre:  'Jahre 4–6',
+                label:  'Der Berufseinstieg',
+                gehalt: 'ca. 36.000 €/Jahr',
+                quelle: 'Ø Einstiegsgehalt nach Berufsausbildung (Destatis 2023)',
+                punkte: [
+                    'Übernahmequote durch Ausbildungsbetrieb ca. 75 %',
+                    'Sofortige reale Berufserfahrung',
+                    'Erste Teamleitungsverantwortung möglich',
+                ]
+            },
+            {
+                jahre:  'Jahre 7–10',
+                label:  'Die Etablierung',
+                gehalt: 'ca. 46.000– 52.000 €/Jahr',
+                quelle: 'Ø Gehalt mit Weiterbildung Meister/Techniker (Destatis-Näherung 2023)',
+                punkte: [
+                    'Meister, Techniker oder Fachwirt als Aufstiegsweg',
+                    'Führungsrolle oder Expertenkarriere erreichbar',
+                    'Selbstständigkeit als realistische Option',
+                ]
+            }
+        ]
+    },
+    studium: {
+        label:    'Studium',
+        subtitle: 'Akademische Ausbildung an Uni / FH',
+        phasen: [
+            {
+                jahre:  'Jahre 1–3',
+                label:  'Die Lernphase',
+                gehalt: '0 € Gehalt · BAföG bis 934 €/Mo',
+                quelle: 'Max. BAföG-Satz 2024; Ø Lebenshaltung 900–1.200 €/Mo (DSW 2023)',
+                punkte: [
+                    'Hohe Flexibilität & freie Zeiteinteilung',
+                    'Breites akademisches Netzwerk aufbauen',
+                    'Theorie- & Forschungskompetenz erwerben',
+                ]
+            },
+            {
+                jahre:  'Jahre 4–6',
+                label:  'Der Berufseinstieg',
+                gehalt: 'ca. 45.000 €/Jahr',
+                quelle: 'Ø Einstiegsgehalt Bachelor-Absolventen (Destatis 2023)',
+                punkte: [
+                    'Bachelor-Abschluss (6 Semester Regelstudium)',
+                    'Trainee-/ Junior-Einstieg mit mehr Verantwortung',
+                    'Option: direkt Master oder Promotion anschließen',
+                ]
+            },
+            {
+                jahre:  'Jahre 7–10',
+                label:  'Die Etablierung',
+                gehalt: 'ca. 58.000– 65.000 €/Jahr',
+                quelle: 'Ø Gehalt Senior-Level/Master-Abschluss (Destatis-Näherung 2023)',
+                punkte: [
+                    'Senior-Level oder Master-Abschluss',
+                    'Führungspositionen & Managementeinstieg',
+                    'Internationales Karrierenetzwerk nutzbar',
+                ]
+            }
+        ]
+    }
+};
+
+
+/* ═══════════════════════════════════════════════
+   3. PHASE 1 — 10 Orientierungsfragen (choice)
+   FIX: Frage 8 nutzt einfache Anführungszeichen
+   als äußere Begrenzer, da die Antwortexte selbst
+   typografische Anführungszeichen enthalten.
+═══════════════════════════════════════════════ */
+const questions = [
+    {
+        text: 'Wie lernst du am liebsten neues Wissen?',
+        answers: [
+            { text: 'Direkt am Arbeitsplatz — durch Ausprobieren und Anwenden',          a: 2, s: 0 },
+            { text: 'Durch Bücher, Vorlesungen und tiefes theoretisches Durchdenken',    a: 0, s: 2 },
+            { text: 'Durch eine Mischung aus Theorie und praktischen Übungen',           a: 1, s: 1 },
+            { text: 'Durch Beobachten und das Nachmachen erfahrener Fachleute',               a: 1, s: 0 },
+        ]
+    },
+    {
+        text: 'Was ist dir bei deinem Berufsweg wichtiger?',
+        answers: [
+            { text: 'Schnell eigenes Geld verdienen und finanziell unabhängig sein',     a: 2, s: 0 },
+            { text: 'Langfristig breitere Karrierechancen durch einen höheren Abschluss', a: 0, s: 2 },
+            { text: 'Eine sichere Anstellung mit klar definierten Aufstiegswegen',             a: 1, s: 1 },
+            { text: 'Maximale Flexibilität und die Chance zur tiefen Spezialisierung',   a: 0, s: 1 },
+        ]
+    },
+    {
+        text: 'Welche Art von Aufgaben macht dir im Alltag am meisten Spaß?',
+        answers: [
+            { text: 'Handwerkliche, technische oder pflegerische Tätigkeiten',           a: 2, s: 0 },
+            { text: 'Forschen, Analysieren und komplexe Zusammenhänge durchdenken',      a: 0, s: 2 },
+            { text: 'Organisieren, Planen und Projekte koordinieren',                          a: 0, s: 1 },
+            { text: 'Kreativ arbeiten und eigene Ideen entwickeln und umsetzen',              a: 1, s: 1 },
+        ]
+    },
+    {
+        text: 'Wie lange bist du bereit, ohne volles Gehalt zu lernen?',
+        answers: [
+            { text: 'Maximal 2–3 Jahre — ich will so schnell wie möglich arbeiten',  a: 2, s: 0 },
+            { text: 'Gerne 4–6 Jahre, wenn ich danach deutlich mehr Möglichkeiten habe',  a: 0, s: 2 },
+            { text: '3–4 Jahre sind okay, solange der Praxisanteil hoch ist',                  a: 1, s: 0 },
+            { text: 'So kurz wie möglich — Berufserfahrung schlägt Papier',          a: 2, s: 0 },
+        ]
+    },
+    {
+        text: 'Welcher berufliche Bereich zieht dich am stärksten an?',
+        answers: [
+            { text: 'Handwerk, Industrie, Einzelhandel, Pflege oder Gastronomie',             a: 2, s: 0 },
+            { text: 'Medizin, Jura, Wissenschaft, Forschung oder akademische Lehre',          a: 0, s: 2 },
+            { text: 'IT, Wirtschaft oder Medien (viele Bildungswege möglich)',            a: 1, s: 1 },
+            { text: 'Soziales, Pädagogik oder Psychologie',                              a: 0, s: 1 },
+        ]
+    },
+    {
+        text: 'Wie wichtig ist dir Campusleben und eine studentische Gemeinschaft?',
+        answers: [
+            { text: 'Gar nicht — ich arbeite lieber sofort in einem echten Team',       a: 2, s: 0 },
+            { text: 'Sehr wichtig — Netzwerk und Campus sind ein echter Mehrwert',       a: 0, s: 2 },
+            { text: 'Ein bisschen schön, aber nicht ausschlaggebend',                    a: 0, s: 1 },
+            { text: 'Ich kann mir ehrlich gesagt beides gut vorstellen',                      a: 1, s: 1 },
+        ]
+    },
+    {
+        text: 'Wie gehst du mit langen Lernphasen und Prüfungsvorbereitungen um?',
+        answers: [
+            { text: 'Eher schwierig — ich lerne lieber durch direkte Erfahrung',        a: 2, s: 0 },
+            { text: 'Gut — ich kann mich ausdauernd strukturiert vorbereiten',           a: 0, s: 2 },
+            { text: 'Es geht, solange der Stoff einen klaren Praxisbezug hat',                a: 1, s: 1 },
+            { text: 'Ich bevorzuge kurze, kompakte Prüfungsformate',                     a: 1, s: 0 },
+        ]
+    },
+    {
+        /* NOTE: outer single-quotes prevent conflict with the typographic " characters inside */
+        text: 'Was würde dein Freundeskreis wahrscheinlich über dich sagen?',
+        answers: [
+            { text: '„Der/Die packt einfach an — super praktisch und zuverlässig“',  a: 2, s: 0 },
+            { text: '„Der/Die denkt alles gründlich durch — unser Analytiker-Typ“',  a: 0, s: 2 },
+            { text: '„Immer super organisiert und mit einem klaren Plan“',                      a: 0, s: 1 },
+            { text: '„Kreativ, voller Ideen und immer für Neues offen“',                  a: 1, s: 1 },
+        ]
+    },
+    {
+        text: 'Wo siehst du dich in 10 Jahren?',
+        answers: [
+            { text: 'Als gefragte Fachkraft in meinem Bereich — evtl. selbstständig', a: 2, s: 0 },
+            { text: 'In einer Führungsrolle mit akademischem Grad',                          a: 0, s: 2 },
+            { text: 'An einem Ort, wo ich wirklich etwas bewegen kann — Weg noch offen',    a: 1, s: 1 },
+            { text: 'Selbstständig — unabhängig davon, welchen Weg ich wähle', a: 1, s: 1 },
+        ]
+    },
+    {
+        text: 'Was hält dich bei einem Projekt am längsten bei der Stange?',
+        answers: [
+            { text: 'Wenn ich schnell ein sichtbares, greifbares Ergebnis erzeuge',          a: 2, s: 0 },
+            { text: 'Wenn ich tiefere Hintergründe verstehe und das große Bild sehe', a: 0, s: 2 },
+            { text: 'Wenn ich im Team zusammenarbeite und gemeinsam aufbaue',                 a: 1, s: 1 },
+            { text: 'Wenn ich kreativ bin und eigene Lösungen entwickeln kann',          a: 1, s: 1 },
+        ]
+    }
+];
+
+
+/* ═══════════════════════════════════════════════
+   4. PHASE 2 — Block A: Ausbildung  (12 Fragen)
+   Typen: choice | scale | yesno
+═══════════════════════════════════════════════ */
+const fragenBlockAusbildung = [
+    {
+        type: 'scale',
+        text: 'Wie gerne arbeitest du mit deinen Händen oder führst körperliche Tätigkeiten aus?',
+        labelMin: 'Überhaupt nicht', labelMax: 'Sehr gerne',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:1,s:0}, {a:2,s:0}, {a:2,s:0} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Kannst du dir vorstellen, früh morgens (z. B. ab 6:00 Uhr) oder in Wechselschichten zu arbeiten?',
+        yes: {a:1,s:0}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie wichtig ist es dir, von Beginn an ein eigenes Einkommen zu verdienen?',
+        labelMin: 'Unwichtig', labelMax: 'Sehr wichtig',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:1,s:0}, {a:2,s:0}, {a:2,s:0} ]
+    },
+    {
+        type: 'choice',
+        text: 'Welcher Ausbildungsbereich zieht dich am stärksten an?',
+        answers: [
+            { text: 'Elektro-, IT- oder Metalltechnik',                 a: 2, s: 0 },
+            { text: 'Pflege, Soziales oder Erziehung',                  a: 1, s: 0 },
+            { text: 'Kaufmännisch, Verwaltung oder Logistik',      a: 1, s: 0 },
+            { text: 'Kreativberufe: Medien, Design oder Mode',          a: 1, s: 1 },
+        ]
+    },
+    {
+        type: 'yesno',
+        text: 'Hast du bereits Praktika, Ferienjobs oder handwerkliche Erfahrungen gesammelt?',
+        yes: {a:2,s:0}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie wohl fühlst du dich mit direktem, täglichem Feedback von einem Vorgesetzten?',
+        labelMin: 'Sehr unwohl', labelMax: 'Sehr wohl',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:1,s:0}, {a:1,s:0}, {a:2,s:0} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Könntest du dir Spaß daran vorstellen, dich tief in einen einzigen Beruf zu spezialisieren?',
+        yes: {a:2,s:0}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie wichtig ist dir ein geregeltes Arbeitsleben mit festen, verlässlichen Arbeitszeiten?',
+        labelMin: 'Unwichtig', labelMax: 'Sehr wichtig',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:1,s:0}, {a:2,s:0}, {a:2,s:0} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Wärst du nach der Ausbildung offen für eine Weiterbildung als Meister, Techniker oder Fachwirt?',
+        yes: {a:2,s:0}, no: {a:0,s:0}
+    },
+    {
+        type: 'choice',
+        text: 'Was würde dich bei der Wahl eines Ausbildungsbetriebs am stärksten überzeugen?',
+        answers: [
+            { text: 'Gute Übernahmechancen nach der Ausbildung',          a: 2, s: 0 },
+            { text: 'Überdurchschnittliches Ausbildungsgehalt',            a: 2, s: 0 },
+            { text: 'Modernes Arbeitsumfeld und gute Ausstattung',             a: 1, s: 1 },
+            { text: 'Weiterbildungsangebote und klare Karrierepfade',          a: 1, s: 1 },
+        ]
+    },
+    {
+        type: 'scale',
+        text: 'Wie sehr schätzt du Routinen und verlässliche Abläufe in deinem Arbeitstag?',
+        labelMin: 'Gar nicht', labelMax: 'Sehr stark',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:1,s:0}, {a:1,s:0}, {a:2,s:0} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Hättest du später Freude daran, selbst Auszubildende oder Praktikanten anzuleiten?',
+        yes: {a:1,s:0}, no: {a:0,s:0}
+    },
+];
+
+
+/* ═══════════════════════════════════════════════
+   5. PHASE 2 — Block B: Studium  (12 Fragen)
+═══════════════════════════════════════════════ */
+const fragenBlockStudium = [
+    {
+        type: 'scale',
+        text: 'Wie sehr faszinieren dich theoretische Konzepte und wissenschaftliche Zusammenhänge?',
+        labelMin: 'Gar nicht', labelMax: 'Sehr stark',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:0,s:1}, {a:0,s:2}, {a:0,s:2} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Kannst du dich über mehrere Wochen ohne externe Struktur selbst motivieren und organisieren?',
+        yes: {a:0,s:2}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie wichtig ist dir eine internationale Karriereperspektive (Auslandssemester, globale Unternehmen)?',
+        labelMin: 'Unwichtig', labelMax: 'Sehr wichtig',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:0,s:1}, {a:0,s:1}, {a:0,s:2} ]
+    },
+    {
+        type: 'choice',
+        text: 'Welche Studienrichtung spricht dich am meisten an?',
+        answers: [
+            { text: 'MINT: Mathematik, Informatik, Naturwissenschaften, Technik', a: 0, s: 2 },
+            { text: 'Wirtschaft, Management, Recht oder Finanzen',                a: 0, s: 2 },
+            { text: 'Geistes-, Sozial- oder Kommunikationswissenschaften',        a: 0, s: 1 },
+            { text: 'Ich bin noch unsicher — möchte verschiedenes erkunden', a: 0, s: 1 },
+        ]
+    },
+    {
+        type: 'yesno',
+        text: 'Wärst du bereit, für dein Studium in eine andere Stadt oder ins Ausland zu ziehen?',
+        yes: {a:0,s:1}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie gern schreibst du längere Texte, Analysen, Haus- oder Seminararbeiten?',
+        labelMin: 'Überhaupt nicht', labelMax: 'Sehr gerne',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:0,s:1}, {a:0,s:1}, {a:0,s:2} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Hast du ein konkretes Berufsziel (z. B. Arzt, Juristin, Ingenieur), das einen Hochschulabschluss erfordert?',
+        yes: {a:0,s:2}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie wichtig ist dir der Aufbau eines akademischen Netzwerks (Alumni, Kommilitonen, Professoren)?',
+        labelMin: 'Unwichtig', labelMax: 'Sehr wichtig',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:0,s:1}, {a:0,s:1}, {a:0,s:2} ]
+    },
+    {
+        type: 'choice',
+        text: 'Welche Studienform würde am besten zu deinem Leben passen?',
+        answers: [
+            { text: 'Vollzeitstudium an einer Universität oder Hochschule', a: 0, s: 2 },
+            { text: 'Duales Studium — Theorie und Betrieb kombiniert',       a: 1, s: 1 },
+            { text: 'Fernstudium — flexibel neben dem Beruf',               a: 0, s: 1 },
+            { text: 'Ich weiß es noch nicht genau',                          a: 0, s: 1 },
+        ]
+    },
+    {
+        type: 'yesno',
+        text: 'Kannst du gut mit langen Phasen ohne direktes Feedback umgehen (z. B. monatelange Projekte)?',
+        yes: {a:0,s:2}, no: {a:0,s:0}
+    },
+    {
+        type: 'scale',
+        text: 'Wie sehr interessierst du dich für Forschung und das Erarbeiten neuer wissenschaftlicher Erkenntnisse?',
+        labelMin: 'Gar nicht', labelMax: 'Sehr stark',
+        scores: [ {a:0,s:0}, {a:0,s:0}, {a:0,s:1}, {a:0,s:1}, {a:0,s:2} ]
+    },
+    {
+        type: 'yesno',
+        text: 'Kannst du dir vorstellen, nach dem Bachelor noch einen Master oder eine Promotion anzuhängen?',
+        yes: {a:0,s:2}, no: {a:0,s:0}
+    },
+];
+
+
+/* ═══════════════════════════════════════════════
+   6. HELPERS
+═══════════════════════════════════════════════ */
+function getActiveBlock() {
+    return currentBlock === 'ausbildung' ? fragenBlockAusbildung : fragenBlockStudium;
+}
+
+
+/* ═══════════════════════════════════════════════
+   7. SCREEN MANAGEMENT
+═══════════════════════════════════════════════ */
+function switchScreen(fromId, toId) {
+    document.getElementById(fromId).classList.remove('active');
+    setTimeout(() => document.getElementById(toId).classList.add('active'), 460);
+}
+
+
+/* ═══════════════════════════════════════════════
+   8. QUIZ FLOW
+═══════════════════════════════════════════════ */
+
+function startQuiz() {
+    currentQuestion = 0; phase = 1; currentBlock = null;
+    phase2Index = 0; scoreAusbildung = 0; scoreStudium = 0;
+    wasSkipped = false; transitioning = false;
+    hideSkipButton();
+    renderCurrentQuestion();
+    switchScreen('screen-landing', 'screen-question');
+}
+
+function renderCurrentQuestion() {
+    const isP2 = (phase === 2);
+    const q    = isP2 ? getActiveBlock()[phase2Index] : questions[currentQuestion];
+
+    const localNum   = isP2 ? phase2Index + 1         : currentQuestion + 1;
+    const localTotal = isP2 ? getActiveBlock().length  : questions.length;
+    const globalNum  = isP2 ? questions.length + phase2Index + 1 : currentQuestion + 1;
+    const globalTot  = questions.length + fragenBlockAusbildung.length; // 22
+
+    document.getElementById('q-number').textContent       = localNum;
+    document.getElementById('question-text').textContent  = q.text;
+    document.getElementById('progress-bar').style.width   = `${(globalNum / globalTot) * 100}%`;
+
+    if (isP2) {
+        document.getElementById('progress-label').textContent = `Vertiefung ${localNum} von ${localTotal}`;
+        document.getElementById('phase-label').textContent    = 'Vertiefung';
+        const badge = document.getElementById('phase2-badge');
+        badge.textContent = currentBlock === 'ausbildung' ? 'Ausbildung' : 'Studium';
+        badge.classList.remove('hidden');
+    } else {
+        document.getElementById('progress-label').textContent = `Frage ${localNum} von ${localTotal}`;
+        document.getElementById('phase-label').textContent    = 'Frage';
+        document.getElementById('phase2-badge').classList.add('hidden');
+    }
+
+    const container = document.getElementById('answers-container');
+    container.innerHTML = '';
+    if      (q.type === 'yesno') renderYesNo(container, q);
+    else if (q.type === 'scale') renderScale(container, q);
+    else                         renderChoices(container, q.answers);
+}
+
+function handleAnswer(scoreObj) {
+    if (transitioning) return;
+    transitioning = true;
+    scoreAusbildung += scoreObj.a;
+    scoreStudium    += scoreObj.s;
+
+    if (phase === 1) {
+        if (currentQuestion + 1 >= questions.length) {
+            currentBlock = (scoreStudium > scoreAusbildung) ? 'studium' : 'ausbildung';
+            phase = 2; phase2Index = 0;
+            showSkipButton();
+            animateToNext(() => { transitioning = false; });
+        } else {
+            currentQuestion++;
+            animateToNext(() => { transitioning = false; });
+        }
+    } else {
+        if (phase2Index + 1 >= getActiveBlock().length) {
+            showResult(false);
+        } else {
+            phase2Index++;
+            animateToNext(() => { transitioning = false; });
+        }
+    }
+}
+
+function animateToNext(onDone) {
+    const card = document.getElementById('question-card');
+    card.classList.add('fading');
+    setTimeout(() => {
+        renderCurrentQuestion();
+        card.classList.remove('fading');
+        onDone();
+    }, 230);
+}
+
+function showResult(skipped) {
+    wasSkipped = skipped;
+    hideSkipButton();
+
+    // Determine winner/loser
+    let statusA, statusS;
+    if      (scoreAusbildung > scoreStudium) { statusA = 'winner'; statusS = 'dimmed'; }
+    else if (scoreStudium > scoreAusbildung) { statusA = 'dimmed'; statusS = 'winner'; }
+    else                                      { statusA = 'tie';    statusS = 'tie'; }
+
+    buildRoadmapColumn('road-ausbildung', mockStatistiken.ausbildung, statusA);
+    buildRoadmapColumn('road-studium',    mockStatistiken.studium,    statusS);
+
+    // Header recommendation text
+    let rec;
+    if (scoreAusbildung > scoreStudium)
+        rec = 'Dein Profil passt besser zur <strong class="text-emerald-400">Ausbildung</strong>';
+    else if (scoreStudium > scoreAusbildung)
+        rec = 'Dein Profil passt besser zum <strong class="text-emerald-400">Studium</strong>';
+    else
+        rec = 'Dein Profil ist <strong class="text-emerald-400">ausgeglichen</strong> — beide Wege passen!';
+    document.getElementById('result-recommendation').innerHTML = rec;
+
+    document.getElementById('result-score-a').textContent = scoreAusbildung;
+    document.getElementById('result-score-s').textContent = scoreStudium;
+    document.getElementById('skip-warning').classList.toggle('hidden', !wasSkipped);
+
+    switchScreen('screen-question', 'screen-result');
+}
+
+function skipSurvey()  { showResult(true); }
+
+function restartQuiz() {
+    document.getElementById('skip-warning').classList.add('hidden');
+    hideSkipButton();
+    switchScreen('screen-result', 'screen-landing');
+}
+
+
+/* ═══════════════════════════════════════════════
+   9. RENDER HELPERS  (choice / scale / yesno)
+═══════════════════════════════════════════════ */
+
+function renderChoices(container, answers) {
+    const labels = ['A','B','C','D'];
+    answers.forEach((ans, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'answer-btn w-full flex items-start gap-3 sm:gap-4 px-4 sm:px-5 py-3.5 sm:py-4 bg-slate-700/30 border border-slate-600/40 rounded-xl text-left cursor-pointer';
+        btn.innerHTML = `
+            <span class="flex-shrink-0 w-7 h-7 mt-0.5 rounded-lg bg-slate-600/60 border border-slate-500/30
+                         text-emerald-400 text-xs font-bold flex items-center justify-center select-none">${labels[idx]}</span>
+            <span class="text-slate-200 font-medium text-sm sm:text-base leading-relaxed">${ans.text}</span>`;
+        btn.addEventListener('click', () => handleAnswer({a: ans.a, s: ans.s}));
+        container.appendChild(btn);
+    });
+}
+
+function renderScale(container, q) {
+    const row = document.createElement('div');
+    row.className = 'flex justify-between px-0.5 mb-3';
+    row.innerHTML = `<span class="text-xs text-slate-400">${q.labelMin}</span><span class="text-xs text-slate-400">${q.labelMax}</span>`;
+    container.appendChild(row);
+    const btnRow = document.createElement('div');
+    btnRow.className = 'flex gap-2';
+    ['1','2','3','4','5'].forEach((l, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'scale-btn'; btn.textContent = l;
+        btn.addEventListener('click', () => handleAnswer(q.scores[i]));
+        btnRow.appendChild(btn);
+    });
+    container.appendChild(btnRow);
+}
+
+function renderYesNo(container, q) {
+    const wrap = document.createElement('div');
+    wrap.className = 'grid grid-cols-2 gap-3 mt-2';
+    const makeBtn = (cls, icon, label, score) => {
+        const b = document.createElement('button');
+        b.className = `yesno-btn ${cls}`;
+        b.innerHTML = `${icon} ${label}`;
+        b.addEventListener('click', () => handleAnswer(score));
+        return b;
+    };
+    wrap.appendChild(makeBtn('btn-yes',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>',
+        'Ja', q.yes));
+    wrap.appendChild(makeBtn('btn-no',
+        '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>',
+        'Nein', q.no));
+    container.appendChild(wrap);
+}
+
+
+/* ═══════════════════════════════════════════════
+   10. ROADMAP BUILDER
+   Generiert die komplette HTML-Struktur einer
+   Roadmap-Spalte aus mockStatistiken und injiziert
+   sie in das jeweilige Container-Element.
+═══════════════════════════════════════════════ */
+
+/**
+ * @param {string}  colId   - DOM-ID des Containers
+ * @param {object}  data    - Track-Daten aus mockStatistiken
+ * @param {string}  status  - 'winner' | 'dimmed' | 'tie'
+ */
+function buildRoadmapColumn(colId, data, status) {
+    const el       = document.getElementById(colId);
+    const isWinner = status === 'winner';
+    const isTie    = status === 'tie';
+    const isActive = isWinner || isTie; // controls emerald accent color
+
+    // ── Apply column status class ──
+    el.classList.remove('road-winner', 'road-dimmed');
+    if (isWinner) el.classList.add('road-winner');
+    else if (status === 'dimmed') el.classList.add('road-dimmed');
+
+    // ── Header badge ──
+    const badge = isWinner
+        ? `<span class="inline-flex items-center gap-1 px-2.5 py-1
+                        bg-emerald-500/15 border border-emerald-500/30
+                        text-emerald-400 rounded-full text-[11px] font-bold uppercase tracking-wide
+                        whitespace-nowrap">
+               <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24"
+                    fill="#10b981"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+               Deine Empfehlung
+           </span>`
+        : isTie
+        ? `<span class="inline-flex items-center gap-1 px-2.5 py-1
+                        bg-slate-600/30 border border-slate-600/40
+                        text-slate-400 rounded-full text-[11px] font-semibold uppercase tracking-wide
+                        whitespace-nowrap">
+               &asymp; Gleichstand
+           </span>`
+        : `<span class="inline-flex items-center px-2.5 py-1
+                        bg-slate-700/40 border border-slate-600/30
+                        text-slate-500 rounded-full text-[11px] font-semibold uppercase tracking-wide
+                        whitespace-nowrap">
+               Zum Vergleich
+           </span>`;
+
+    // ── Colors based on winner status ──
+    const dotCls    = isActive ? 'bg-emerald-500 border-emerald-600/80' : 'bg-slate-600 border-slate-700';
+    const lineCls   = isActive ? 'border-emerald-500/25' : 'border-slate-700/40';
+    const lyrCls    = isActive ? 'text-emerald-400/70' : 'text-slate-500';
+    const salCls    = isActive ? 'text-emerald-400' : 'text-slate-300';
+    const bullCls   = isActive ? 'text-emerald-500' : 'text-slate-600';
+
+    // ── Phase blocks ──
+    const phasesHTML = data.phasen.map((ph, idx) => {
+        const isLast = idx === data.phasen.length - 1;
+
+        const bullets = ph.punkte.map(b =>
+            `<li class="text-xs text-slate-400 flex items-start gap-1.5 leading-relaxed">
+                <span class="${bullCls} flex-shrink-0 mt-0.5 select-none">&#9658;</span>
+                <span>${b}</span>
+             </li>`
+        ).join('');
+
+        return `
+        <div${isLast ? '' : ' class="mb-5 pb-5 border-b border-slate-700/20"'}>
+
+            <!-- Phase label row -->
+            <div class="flex items-center gap-2 mb-3">
+                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 border-2 ${dotCls}"></div>
+                <p class="text-[11px] leading-none flex flex-wrap items-baseline gap-x-1.5">
+                    <span class="font-black uppercase tracking-widest ${lyrCls}">${ph.jahre}</span>
+                    <span class="font-semibold text-slate-300">&middot; ${ph.label}</span>
+                </p>
+            </div>
+
+            <!-- Content indented from the dot -->
+            <div class="ml-5 pl-3 border-l-2 ${lineCls}">
+
+                <!-- Salary + inline info toggle -->
+                <div class="mb-2.5">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="font-extrabold text-sm ${salCls}">${ph.gehalt}</span>
+
+                        <!-- Info button ⓘ -->
+                        <button onclick="toggleInfoBox(this)"
+                                title="Datenquelle anzeigen"
+                                class="inline-flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0
+                                       bg-slate-700/70 border border-slate-600/50
+                                       hover:bg-emerald-500/15 hover:border-emerald-500/40
+                                       text-[10px] font-black text-slate-500 hover:text-emerald-400
+                                       cursor-pointer transition-all duration-150 select-none">i</button>
+                    </div>
+
+                    <!-- Source text — hidden by default, toggles inline ──────
+                         NOTE: nicht position:absolute, um Overflow-Probleme
+                         innerhalb der gescrollten Column zu vermeiden.       -->
+                    <div class="info-box hidden mt-2 px-3 py-2
+                                bg-slate-900/95 border border-slate-700/60
+                                rounded-lg text-[11px] text-slate-400 leading-relaxed">
+                        <span class="text-slate-300 font-semibold block mb-0.5">Datenquelle</span>
+                        ${ph.quelle}.
+                        Quelle: Simuliertes RAG-Modell auf Basis von Destatis-N&auml;herungswerten.
+                    </div>
+                </div>
+
+                <!-- Bullet points -->
+                <ul class="space-y-1.5">${bullets}</ul>
+            </div>
+        </div>`;
+    }).join('');
+
+    // ── Assemble full column HTML ──
+    el.innerHTML = `
+        <!-- Column header -->
+        <div class="p-4 sm:p-5 border-b border-slate-700/40">
+            <div class="flex items-start justify-between gap-2 flex-wrap">
+                <div>
+                    <h3 class="text-base sm:text-lg font-extrabold text-slate-100 leading-tight">
+                        ${data.label}
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">${data.subtitle}</p>
+                </div>
+                <div class="flex-shrink-0">${badge}</div>
+            </div>
+        </div>
+
+        <!-- Timeline phases -->
+        <div class="p-4 sm:p-5">${phasesHTML}</div>`;
+}
+
+
+/* ═══════════════════════════════════════════════
+   11. INFO-BOX TOGGLE
+   Öffnet / schließt die Quellenangabe inline
+   unterhalb der Gehaltszeile. Immer nur eine
+   Box gleichzeitig sichtbar.
+═══════════════════════════════════════════════ */
+
+/**
+ * @param {HTMLButtonElement} btn - Das angeklickte ⓘ-Element
+ */
+function toggleInfoBox(btn) {
+    // The info-box div is the next sibling of the flex row that contains the button.
+    // Structure: <div.flex> [salary span] [btn] </div>  <div.info-box> ... </div>
+    const box    = btn.parentElement.nextElementSibling;
+    const isOpen = !box.classList.contains('hidden');
+    closeAllInfoBoxes();
+    if (!isOpen) box.classList.remove('hidden');
+}
+
+function closeAllInfoBoxes() {
+    document.querySelectorAll('.info-box').forEach(b => b.classList.add('hidden'));
+}
+
+// Close all info boxes when clicking anywhere outside an info-button
+document.addEventListener('click', e => {
+    if (!e.target.closest('button[onclick^="toggleInfoBox"]')) closeAllInfoBoxes();
+});
+
+
+/* ═══════════════════════════════════════════════
+   12. SKIP BAR MANAGEMENT
+═══════════════════════════════════════════════ */
+
+function showSkipButton() {
+    const bar = document.getElementById('skip-bar');
+    bar.style.display = 'flex';
+    document.getElementById('screen-question').classList.add('has-skip');
+    requestAnimationFrame(() => { bar.style.opacity = '1'; });
+}
+
+function hideSkipButton() {
+    const bar = document.getElementById('skip-bar');
+    bar.style.opacity = '0';
+    document.getElementById('screen-question').classList.remove('has-skip');
+    setTimeout(() => { bar.style.display = 'none'; }, 320);
+}
+
+</script>
+</body>
+</html>
