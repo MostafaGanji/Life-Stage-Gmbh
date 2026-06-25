@@ -73,12 +73,6 @@
             width: 3px; background: var(--em); border-radius: 3px 0 0 3px;
             transform: scaleY(0); transition: transform .16s ease;
         }
-        .answer-btn:hover::before  { transform: scaleY(1); }
-        .answer-btn:hover {
-            transform: translateX(4px);
-            background-color: rgba(16,185,129,.08) !important;
-            border-color: rgba(16,185,129,.45) !important;
-        }
         .answer-btn:active { transform: translateX(2px); }
 
         /* ══════════════════════════════════════════════
@@ -90,11 +84,6 @@
             border: 1px solid rgba(100,116,139,.3);
             color: #94a3b8; font-size: 1.125rem; font-weight: 700;
             cursor: pointer; transition: all .15s ease;
-        }
-        .scale-btn:hover {
-            background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.5);
-            color: #34d399; transform: translateY(-3px);
-            box-shadow: 0 6px 16px rgba(16,185,129,.15);
         }
         .scale-btn:active { transform: translateY(-1px); }
 
@@ -109,16 +98,34 @@
         .btn-yes {
             background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.35); color: #34d399;
         }
-        .btn-yes:hover {
-            background: rgba(16,185,129,.2); border-color: rgba(16,185,129,.65);
-            transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,.2);
-        }
         .btn-no {
             background: rgba(30,45,66,.7); border: 1px solid rgba(100,116,139,.3); color: #94a3b8;
         }
-        .btn-no:hover {
-            background: rgba(100,116,139,.15); border-color: rgba(100,116,139,.5);
-            color: #cbd5e1; transform: translateY(-2px);
+
+        /* Hover-Effekte NUR auf Geräten mit echter Maus (kein Touch).
+           Verhindert den "sticky hover"-Bug auf Smartphones/Tablets:
+           Nach einem Tap bleibt :hover am Touch-Punkt kleben und
+           überträgt sich auf den Button der nächsten Frage. */
+        @media (hover: hover) {
+            .answer-btn:hover::before { transform: scaleY(1); }
+            .answer-btn:hover {
+                transform: translateX(4px);
+                background-color: rgba(16,185,129,.08) !important;
+                border-color: rgba(16,185,129,.45) !important;
+            }
+            .scale-btn:hover {
+                background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.5);
+                color: #34d399; transform: translateY(-3px);
+                box-shadow: 0 6px 16px rgba(16,185,129,.15);
+            }
+            .btn-yes:hover {
+                background: rgba(16,185,129,.2); border-color: rgba(16,185,129,.65);
+                transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,.2);
+            }
+            .btn-no:hover {
+                background: rgba(100,116,139,.15); border-color: rgba(100,116,139,.5);
+                color: #cbd5e1; transform: translateY(-2px);
+            }
         }
 
         /* ══════════════════════════════════════════════
