@@ -164,6 +164,12 @@
             from { opacity: 0; transform: translateY(-4px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+
+        /* Result screen scrolls from the TOP, not from center */
+        #screen-result {
+            align-items: flex-start;
+            justify-content: center;
+        }
     </style>
 </head>
 
@@ -258,7 +264,17 @@
          SCREEN 3 — RESULT  (10-Jahres-Roadmap)
     ████████████████████████████████████████████ -->
     <div id="screen-result" class="screen">
-        <div class="max-w-5xl w-full py-4">
+        <div class="max-w-5xl w-full py-6">
+
+            <!-- Logo / Brand bar -->
+            <div class="flex items-center justify-center mb-6">
+                <span class="inline-flex items-center gap-2 px-3.5 py-1.5
+                             text-xs font-bold tracking-widest text-emerald-400 uppercase
+                             bg-emerald-400/10 rounded-full border border-emerald-400/20">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    Life Stage GmbH
+                </span>
+            </div>
 
             <!-- ⚠ Skip accuracy warning -->
             <div id="skip-warning" class="hidden mb-6 max-w-2xl mx-auto">
@@ -323,14 +339,72 @@
                 <div id="road-studium" class="road-col"></div>
             </div>
 
-            <!-- Source note -->
+            <!-- Source note (Roadmap) -->
             <p class="text-slate-600 text-xs text-center mb-6 leading-relaxed">
                 * Alle Gehaltsangaben sind Näherungswerte aus einem simulierten RAG-Modell
                 (Destatis-Basis 2023/24) und dienen ausschließlich zur Orientierung.
             </p>
 
-            <!-- Restart -->
-            <div class="text-center">
+            <!-- ════════════════════════════════════════════
+                 WISSENS-HUB — Statistische Einblicke
+                 Wird via buildWissensHub() befüllt und
+                 per .hidden-Klasse ein-/ausgeblendet.
+            ════════════════════════════════════════════ -->
+            <div id="wissens-hub" class="hidden mb-6">
+                <div class="bg-white rounded-2xl overflow-hidden"
+                     style="box-shadow: 0 8px 48px rgba(0,0,0,0.32);">
+
+                    <!-- Card header -->
+                    <div class="bg-slate-50 px-5 sm:px-7 py-4
+                                border-b border-slate-200/80
+                                flex items-center gap-3.5">
+
+                        <!-- Chart-bar icon -->
+                        <div class="w-10 h-10 rounded-xl bg-white shadow-sm border border-slate-200
+                                    flex items-center justify-center flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                                 fill="none" viewBox="0 0 24 24" stroke="#0f172a" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                      d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0
+                                         1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375
+                                         21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625
+                                         c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504
+                                         1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25
+                                         a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125
+                                         c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504
+                                         21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25
+                                         a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <h3 class="text-slate-900 font-extrabold text-base sm:text-lg leading-tight">
+                                Statistische Einblicke &amp; Perspektiven
+                            </h3>
+                            <p id="hub-subtitle" class="text-slate-500 text-xs mt-0.5">
+                                Wird geladen…
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Stats grid — 3 Zellen, befüllt durch buildWissensHub() -->
+                    <div id="stats-container"
+                         class="grid grid-cols-1 sm:grid-cols-3
+                                divide-y sm:divide-y-0 sm:divide-x divide-slate-100/80">
+                    </div>
+
+                    <!-- Card footer -->
+                    <div class="bg-slate-50/80 border-t border-slate-100 px-5 sm:px-7 py-3">
+                        <p class="text-slate-400 text-[11px] text-center leading-relaxed">
+                            Statistiken basieren auf Näherungswerten öffentlicher Quellen
+                            (BIBB, Destatis, Bundesagentur für Arbeit) und dienen zur Orientierung.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CTA — Nochmals starten (unter dem Hub) -->
+            <div class="text-center pb-4">
                 <button onclick="restartQuiz()"
                     class="inline-flex items-center gap-2 px-7 py-3
                            border border-slate-600 hover:border-emerald-500/50
@@ -474,6 +548,79 @@ const mockStatistiken = {
                     'Führungspositionen & Managementeinstieg',
                     'Internationales Karrierenetzwerk nutzbar',
                 ]
+            }
+        ]
+    }
+};
+
+
+/* ═══════════════════════════════════════════════
+   2b. STATISTIK-DATEN  (Wissens-Hub)
+   Drei Arrays (studium / ausbildung / gleichstand).
+   Jedes Objekt: { wert, text, quelle }
+   Quellen: BIBB, Destatis, Bundesagentur für Arbeit, IW, Forsa.
+═══════════════════════════════════════════════ */
+const statistikDaten = {
+    studium: {
+        subtitle: 'Auf deinen akademischen Weg zugeschnittene Fakten',
+        akzentKlasse: 'text-emerald-700',
+        stats: [
+            {
+                wert:   '80 %',
+                text:   'der Absolventinnen und Absolventen in MINT-Fächern finden innerhalb von 6 Monaten nach Studienabschluss eine unbefristete Stelle.',
+                quelle: 'Hochschulstatistik / Destatis 2023'
+            },
+            {
+                wert:   '+25 %',
+                text:   'liegt das Median-Einkommen von Akademikerinnen und Akademikern nach 10 Berufsjahren im Durchschnitt über dem von Fachkräften ohne Hochschulabschluss.',
+                quelle: 'Bundesagentur für Arbeit, Entgeltatlas 2023'
+            },
+            {
+                wert:   '62 %',
+                text:   'der Unternehmen mit über 500 Beschäftigten besetzen Führungspositionen bevorzugt mit Hochschulabsolventinnen und -absolventen.',
+                quelle: 'Institut der deutschen Wirtschaft (IW), 2022'
+            }
+        ]
+    },
+    ausbildung: {
+        subtitle: 'Auf deinen Ausbildungsweg zugeschnittene Fakten',
+        akzentKlasse: 'text-blue-700',
+        stats: [
+            {
+                wert:   '75 %',
+                text:   'Übernahmequote: Mehr als drei Viertel aller Auszubildenden werden nach erfolgreichem Abschluss vom Ausbildungsbetrieb übernommen.',
+                quelle: 'Bundesinstitut für Berufsbildung (BIBB), 2023'
+            },
+            {
+                wert:   '2,8 Mio.',
+                text:   'offene Stellen für Fachkräfte mit Berufsabschluss — Ausgebildete sind das meistgesuchte Arbeitnehmer-Profil in Deutschland.',
+                quelle: 'Bundesagentur für Arbeit, Fachkräfteradar 2024'
+            },
+            {
+                wert:   '3 Jahre',
+                text:   'Praxiserfahrung von Beginn an: Früherer Berufseinstieg bedeutet frühzeitige finanzielle Unabhängigkeit und einen echten Karrierevorsprung.',
+                quelle: 'BIBB-Datenreport zur Berufsbildung, 2023'
+            }
+        ]
+    },
+    gleichstand: {
+        subtitle: 'Hilfreiche Fakten für deine noch offene Entscheidung',
+        akzentKlasse: 'text-slate-800',
+        stats: [
+            {
+                wert:   '68 %',
+                text:   'der Schulabgängerinnen und -abgänger sind bei ihrer ersten Berufsentscheidung unsicher — du befindest dich damit in bester Gesellschaft.',
+                quelle: 'Forsa-Umfrage zur Berufsorientierung, 2023'
+            },
+            {
+                wert:   '40 %',
+                text:   'entscheiden sich für ein duales Studium — die ideale Brücke, die Praxisnähe der Ausbildung mit dem akademischen Abschluss verbindet.',
+                quelle: 'Stifterverband / BIBB, 2023'
+            },
+            {
+                wert:   'Tipp',
+                text:   'Sprich mit Menschen, die deinen Wunschberuf bereits ausüben. Hospitationen und Praktika sind der verlässlichste Kompass für diese Entscheidung.',
+                quelle: 'Life Stage GmbH — Beratungsansatz'
             }
         ]
     }
@@ -871,6 +1018,13 @@ function showResult(skipped) {
     document.getElementById('result-score-s').textContent = scoreStudium;
     document.getElementById('skip-warning').classList.toggle('hidden', !wasSkipped);
 
+    // Wissens-Hub: which dataset to show
+    let hubKey;
+    if      (scoreAusbildung > scoreStudium) hubKey = 'ausbildung';
+    else if (scoreStudium > scoreAusbildung) hubKey = 'studium';
+    else                                      hubKey = 'gleichstand';
+    buildWissensHub(hubKey);
+
     switchScreen('screen-question', 'screen-result');
 }
 
@@ -878,8 +1032,30 @@ function skipSurvey()  { showResult(true); }
 
 function restartQuiz() {
     document.getElementById('skip-warning').classList.add('hidden');
+    document.getElementById('wissens-hub').classList.add('hidden');
     hideSkipButton();
     switchScreen('screen-result', 'screen-landing');
+}
+
+function buildWissensHub(key) {
+    const data      = statistikDaten[key];
+    const container = document.getElementById('stats-container');
+    const hub       = document.getElementById('wissens-hub');
+
+    document.getElementById('hub-subtitle').textContent = data.subtitle;
+
+    container.innerHTML = data.stats.map(stat => `
+        <div class="px-5 sm:px-7 py-5 sm:py-6">
+            <p class="text-4xl sm:text-5xl font-extrabold leading-none mb-2 ${data.akzentKlasse}">
+                ${stat.wert}
+            </p>
+            <p class="text-slate-600 text-sm leading-relaxed mb-3">${stat.text}</p>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+                <span class="font-semibold text-slate-500">Quelle:</span> ${stat.quelle}
+            </p>
+        </div>`).join('');
+
+    hub.classList.remove('hidden');
 }
 
 
