@@ -102,6 +102,35 @@
             background: rgba(30,45,66,.7); border: 1px solid rgba(100,116,139,.3); color: #94a3b8;
         }
 
+        /* Tap/Klick-Feedback auf allen Geräten — kurzes grünes Aufleuchten.
+           Die Klasse wird per JS gesetzt und verschwindet automatisch
+           mit der Karten-Fade-Animation (animateToNext). */
+        .answer-btn.is-selected {
+            transform: translateX(3px);
+            background-color: rgba(16,185,129,.18) !important;
+            border-color: rgba(16,185,129,.65) !important;
+        }
+        .answer-btn.is-selected::before { transform: scaleY(1); }
+        .scale-btn.is-selected {
+            background: rgba(16,185,129,.22);
+            border-color: rgba(16,185,129,.65);
+            color: #34d399;
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(16,185,129,.22);
+        }
+        .btn-yes.is-selected {
+            background: rgba(16,185,129,.28);
+            border-color: rgba(16,185,129,.75);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16,185,129,.25);
+        }
+        .btn-no.is-selected {
+            background: rgba(100,116,139,.22);
+            border-color: rgba(100,116,139,.6);
+            color: #cbd5e1;
+            transform: translateY(-2px);
+        }
+
         /* Hover-Effekte NUR auf Geräten mit echter Maus (kein Touch).
            Verhindert den "sticky hover"-Bug auf Smartphones/Tablets:
            Nach einem Tap bleibt :hover am Touch-Punkt kleben und
@@ -1079,7 +1108,10 @@ function renderChoices(container, answers) {
             <span class="flex-shrink-0 w-7 h-7 mt-0.5 rounded-lg bg-slate-600/60 border border-slate-500/30
                          text-emerald-400 text-xs font-bold flex items-center justify-center select-none">${labels[idx]}</span>
             <span class="text-slate-200 font-medium text-sm sm:text-base leading-relaxed">${ans.text}</span>`;
-        btn.addEventListener('click', () => handleAnswer({a: ans.a, s: ans.s}));
+        btn.addEventListener('click', () => {
+            btn.classList.add('is-selected');
+            handleAnswer({a: ans.a, s: ans.s});
+        });
         container.appendChild(btn);
     });
 }
@@ -1094,7 +1126,10 @@ function renderScale(container, q) {
     ['1','2','3','4','5'].forEach((l, i) => {
         const btn = document.createElement('button');
         btn.className = 'scale-btn'; btn.textContent = l;
-        btn.addEventListener('click', () => handleAnswer(q.scores[i]));
+        btn.addEventListener('click', () => {
+            btn.classList.add('is-selected');
+            handleAnswer(q.scores[i]);
+        });
         btnRow.appendChild(btn);
     });
     container.appendChild(btnRow);
@@ -1107,7 +1142,10 @@ function renderYesNo(container, q) {
         const b = document.createElement('button');
         b.className = `yesno-btn ${cls}`;
         b.innerHTML = `${icon} ${label}`;
-        b.addEventListener('click', () => handleAnswer(score));
+        b.addEventListener('click', () => {
+            b.classList.add('is-selected');
+            handleAnswer(score);
+        });
         return b;
     };
     wrap.appendChild(makeBtn('btn-yes',
